@@ -460,6 +460,10 @@ class AppPrefs : PreferenceModel("florisboard-app-prefs") {
             key = "keyboard__space_bar_switches_to_characters",
             default = true,
         )
+        val maxRandomKeystrokeDelay = int(
+            key = "keyboard__max_random_keystroke_delay",
+            default = 250,
+        )
 
         fun keyHintConfiguration(): KeyHintConfiguration {
             return KeyHintConfiguration(

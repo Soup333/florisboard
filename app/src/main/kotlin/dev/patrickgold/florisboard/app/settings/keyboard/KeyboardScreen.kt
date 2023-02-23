@@ -172,6 +172,14 @@ fun KeyboardScreen() = FlorisScreen {
                 title = stringRes(R.string.pref__keyboard__space_bar_switches_to_characters__label),
                 summary = stringRes(R.string.pref__keyboard__space_bar_switches_to_characters__summary),
             )
+            DialogSliderPreference(
+                prefs.keyboard.maxRandomKeystrokeDelay,
+                title = stringRes(R.string.pref__keyboard__max_random_keystroke_delay__label),
+                valueLabel = { stringRes(R.string.unit__milliseconds__symbol, "v" to it) },
+                min = 0,
+                max = 1000,
+                stepIncrement = 50,
+            )
         }
     }
 }
