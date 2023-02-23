@@ -99,7 +99,7 @@ class InputEventDispatcher private constructor(private val repeatableKeyCodes: I
         onRepeat: () -> Boolean = { true },
     ) = runBlocking {
         if (prefs.keyboard.maxRandomKeystrokeDelay.get() != 0) {
-            delay((1..prefs.keyboard.maxRandomKeystrokeDelay.get()).random().toLong())
+            delay(((prefs.keyboard.maxRandomKeystrokeDelay.get() / 2)..prefs.keyboard.maxRandomKeystrokeDelay.get()).random().toLong())
         }
         flogDebug { data.toString() }
         val eventTime = SystemClock.uptimeMillis()
