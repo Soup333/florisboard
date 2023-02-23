@@ -98,7 +98,9 @@ class InputEventDispatcher private constructor(private val repeatableKeyCodes: I
         onLongPress: () -> Boolean = { false },
         onRepeat: () -> Boolean = { true },
     ) = runBlocking {
-        delay((1..prefs.keyboard.maxRandomKeystrokeDelay.get()).random().toLong())
+        if (prefs.keyboard.maxRandomKeystrokeDelay.get() != 0) {
+            delay((1..prefs.keyboard.maxRandomKeystrokeDelay.get()).random().toLong())
+        }
         flogDebug { data.toString() }
         val eventTime = SystemClock.uptimeMillis()
         val result = pressedKeys.withLock { pressedKeys ->
