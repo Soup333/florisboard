@@ -24,6 +24,8 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -52,6 +54,7 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -75,7 +78,6 @@ import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.ui.window.Popup
 import androidx.emoji2.text.EmojiCompat
 import androidx.emoji2.widget.EmojiTextView
-import com.google.accompanist.flowlayout.FlowRow
 import dev.patrickgold.florisboard.R
 import dev.patrickgold.florisboard.app.florisPreferenceModel
 import dev.patrickgold.florisboard.editorInstance
@@ -85,8 +87,9 @@ import dev.patrickgold.florisboard.ime.text.keyboard.TextKeyData
 import dev.patrickgold.florisboard.ime.theme.FlorisImeTheme
 import dev.patrickgold.florisboard.ime.theme.FlorisImeUi
 import dev.patrickgold.florisboard.keyboardManager
+import dev.patrickgold.florisboard.lib.android.AndroidKeyguardManager
 import dev.patrickgold.florisboard.lib.android.showShortToast
-import dev.patrickgold.florisboard.lib.compose.florisScrollbar
+import dev.patrickgold.florisboard.lib.android.systemService
 import dev.patrickgold.florisboard.lib.compose.safeTimes
 import dev.patrickgold.florisboard.lib.compose.stringRes
 import dev.patrickgold.florisboard.lib.snygg.ui.snyggBackground
@@ -100,7 +103,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlin.math.ceil
 
-private val EmojiCategoryValues = EmojiCategory.values()
+private val EmojiCategoryValues = EmojiCategory.entries
 private val EmojiBaseWidth = 42.dp
 private val EmojiDefaultFontSize = 22.sp
 
@@ -145,6 +148,9 @@ fun EmojiPaletteView(
             }
         }
     }
+    val androidKeyguardManager = remember { context.systemService(AndroidKeyguardManager::class) }
+
+    val deviceLocked = androidKeyguardManager.let { it.isDeviceLocked || it.isKeyguardLocked }
 
     var activeCategory by remember { mutableStateOf(EmojiCategory.RECENTLY_USED) }
     val lazyListState = rememberLazyGridState()
@@ -154,7 +160,7 @@ fun EmojiPaletteView(
     val fontSizeMultiplier = prefs.keyboard.fontSizeMultiplier()
     val emojiKeyStyle = FlorisImeTheme.style.get(element = FlorisImeUi.EmojiKey)
     val emojiKeyFontSize = emojiKeyStyle.fontSize.spSize(default = EmojiDefaultFontSize) safeTimes fontSizeMultiplier
-    val contentColor = emojiKeyStyle.foreground.solidColor(default = FlorisImeTheme.fallbackContentColor())
+    val contentColor = emojiKeyStyle.foreground.solidColor(context, default = FlorisImeTheme.fallbackContentColor())
 
     Column(modifier = modifier) {
         EmojiCategoriesTabRow(
@@ -170,7 +176,7 @@ fun EmojiPaletteView(
                 .fillMaxWidth()
                 .weight(1f),
         ) {
-            var recentlyUsedVersion by remember { mutableStateOf(0) }
+            var recentlyUsedVersion by remember { mutableIntStateOf(0) }
             val emojiMapping = if (activeCategory == EmojiCategory.RECENTLY_USED) {
                 // Purposely using remember here to prevent recomposition, as this would cause rapid
                 // emoji changes for the user when in recently used category.
@@ -180,8 +186,18 @@ fun EmojiPaletteView(
             } else {
                 emojiMappings[activeCategory]!!
             }
-
-            if (activeCategory == EmojiCategory.RECENTLY_USED && emojiMapping.isEmpty()) {
+            if (activeCategory == EmojiCategory.RECENTLY_USED && deviceLocked) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(all = 8.dp),
+                ) {
+                    Text(
+                        text = stringRes(R.string.emoji__recently_used__phone_locked_message),
+                        color = contentColor,
+                    )
+                }
+            } else if (activeCategory == EmojiCategory.RECENTLY_USED && emojiMapping.isEmpty()) {
                 Column(
                     modifier = Modifier
                         .fillMaxSize()
@@ -198,7 +214,8 @@ fun EmojiPaletteView(
                         fontStyle = FontStyle.Italic,
                     )
                 }
-            } else key(emojiMapping) {
+            }
+            else key(emojiMapping) {
                 CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
                     LazyVerticalGrid(
                         modifier = Modifier
@@ -249,11 +266,12 @@ private fun EmojiCategoriesTabRow(
     activeCategory: EmojiCategory,
     onCategoryChange: (EmojiCategory) -> Unit,
 ) {
+    val context = LocalContext.current
     val inputFeedbackController = LocalInputFeedbackController.current
     val tabStyle = FlorisImeTheme.style.get(element = FlorisImeUi.EmojiTab)
     val tabStyleFocused = FlorisImeTheme.style.get(element = FlorisImeUi.EmojiTab, isFocus = true)
-    val unselectedContentColor = tabStyle.foreground.solidColor(default = FlorisImeTheme.fallbackContentColor())
-    val selectedContentColor = tabStyleFocused.foreground.solidColor(default = FlorisImeTheme.fallbackContentColor())
+    val unselectedContentColor = tabStyle.foreground.solidColor(context, default = FlorisImeTheme.fallbackContentColor())
+    val selectedContentColor = tabStyleFocused.foreground.solidColor(context, default = FlorisImeTheme.fallbackContentColor())
 
     val selectedTabIndex = EmojiCategoryValues.indexOf(activeCategory)
     TabRow(
@@ -366,6 +384,7 @@ private fun EmojiKey(
     }
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun EmojiVariationsPopup(
     variations: List<Emoji>,
@@ -377,6 +396,7 @@ private fun EmojiVariationsPopup(
 ) {
     val popupStyle = FlorisImeTheme.style.get(element = FlorisImeUi.EmojiKeyPopup)
     val emojiKeyHeight = FlorisImeSizing.smartbarHeight
+    val context = LocalContext.current
 
     if (visible) {
         Popup(
@@ -391,8 +411,8 @@ private fun EmojiVariationsPopup(
                 modifier = Modifier
                     .widthIn(max = EmojiBaseWidth * 6)
                     .snyggShadow(popupStyle)
-                    .snyggBorder(popupStyle)
-                    .snyggBackground(popupStyle, fallbackColor = FlorisImeTheme.fallbackSurfaceColor()),
+                    .snyggBorder(context, popupStyle)
+                    .snyggBackground(context, popupStyle, fallbackColor = FlorisImeTheme.fallbackSurfaceColor()),
             ) {
                 for (emoji in variations) {
                     Box(
@@ -408,7 +428,7 @@ private fun EmojiVariationsPopup(
                             modifier = Modifier.align(Alignment.Center),
                             text = emoji.value,
                             emojiCompatInstance = emojiCompatInstance,
-                            color = popupStyle.foreground.solidColor(default = FlorisImeTheme.fallbackContentColor()),
+                            color = popupStyle.foreground.solidColor(context, default = FlorisImeTheme.fallbackContentColor()),
                             fontSize = popupStyle.fontSize.spSize(default = EmojiDefaultFontSize) safeTimes fontSizeMultiplier,
                         )
                     }

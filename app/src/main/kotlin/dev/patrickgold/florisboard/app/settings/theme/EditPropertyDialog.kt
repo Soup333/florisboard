@@ -37,6 +37,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -72,12 +73,16 @@ import dev.patrickgold.florisboard.lib.kotlin.toStringWithoutDotZero
 import dev.patrickgold.florisboard.lib.rememberValidationResult
 import dev.patrickgold.florisboard.lib.snygg.SnyggLevel
 import dev.patrickgold.florisboard.lib.snygg.SnyggPropertySetSpec
+import dev.patrickgold.florisboard.lib.snygg.value.MaterialYouColor
 import dev.patrickgold.florisboard.lib.snygg.value.SnyggCutCornerDpShapeValue
 import dev.patrickgold.florisboard.lib.snygg.value.SnyggCutCornerPercentShapeValue
 import dev.patrickgold.florisboard.lib.snygg.value.SnyggDefinedVarValue
 import dev.patrickgold.florisboard.lib.snygg.value.SnyggDpShapeValue
 import dev.patrickgold.florisboard.lib.snygg.value.SnyggDpSizeValue
 import dev.patrickgold.florisboard.lib.snygg.value.SnyggImplicitInheritValue
+import dev.patrickgold.florisboard.lib.snygg.value.SnyggMaterialYouDarkColorValue
+import dev.patrickgold.florisboard.lib.snygg.value.SnyggMaterialYouLightColorValue
+import dev.patrickgold.florisboard.lib.snygg.value.SnyggMaterialYouValue
 import dev.patrickgold.florisboard.lib.snygg.value.SnyggPercentShapeValue
 import dev.patrickgold.florisboard.lib.snygg.value.SnyggRoundedCornerDpShapeValue
 import dev.patrickgold.florisboard.lib.snygg.value.SnyggRoundedCornerPercentShapeValue
@@ -111,12 +116,14 @@ private enum class ShapeCorner {
 
     @Composable
     fun label(): String {
-        return stringRes(when (this) {
-            TOP_START -> R.string.enum__shape_corner__top_start
-            TOP_END -> R.string.enum__shape_corner__top_end
-            BOTTOM_END -> R.string.enum__shape_corner__bottom_end
-            BOTTOM_START -> R.string.enum__shape_corner__bottom_start
-        })
+        return stringRes(
+            when (this) {
+                TOP_START -> R.string.enum__shape_corner__top_start
+                TOP_END -> R.string.enum__shape_corner__top_end
+                BOTTOM_END -> R.string.enum__shape_corner__bottom_end
+                BOTTOM_START -> R.string.enum__shape_corner__bottom_start
+            }
+        )
     }
 }
 
@@ -136,22 +143,32 @@ internal fun EditPropertyDialog(
     var showAlreadyExistsError by rememberSaveable { mutableStateOf(false) }
 
     var propertyName by rememberSaveable {
-        mutableStateOf(if (isAddPropertyDialog && propertySetSpec == null) { "" } else { initProperty.name })
+        mutableStateOf(
+            if (isAddPropertyDialog && propertySetSpec == null) {
+                ""
+            } else {
+                initProperty.name
+            }
+        )
     }
     val propertyNameValidation = rememberValidationResult(ExtensionValidation.ThemeComponentVariableName, propertyName)
     var propertyValueEncoder by remember {
-        mutableStateOf(if (isAddPropertyDialog && propertySetSpec == null) {
-            SnyggImplicitInheritValue
-        } else {
-            initProperty.value.encoder()
-        })
+        mutableStateOf(
+            if (isAddPropertyDialog && propertySetSpec == null) {
+                SnyggImplicitInheritValue
+            } else {
+                initProperty.value.encoder()
+            }
+        )
     }
     var propertyValue by remember {
-        mutableStateOf(if (isAddPropertyDialog && propertySetSpec == null) {
-            SnyggImplicitInheritValue
-        } else {
-            initProperty.value
-        })
+        mutableStateOf(
+            if (isAddPropertyDialog && propertySetSpec == null) {
+                SnyggImplicitInheritValue
+            } else {
+                initProperty.value
+            }
+        )
     }
 
     fun isPropertyNameValid(): Boolean {
@@ -168,16 +185,20 @@ internal fun EditPropertyDialog(
     }
 
     JetPrefAlertDialog(
-        title = stringRes(if (isAddPropertyDialog) {
-            R.string.settings__theme_editor__add_property
-        } else {
-            R.string.settings__theme_editor__edit_property
-        }),
-        confirmLabel = stringRes(if (isAddPropertyDialog) {
-            R.string.action__add
-        } else {
-            R.string.action__apply
-        }),
+        title = stringRes(
+            if (isAddPropertyDialog) {
+                R.string.settings__theme_editor__add_property
+            } else {
+                R.string.settings__theme_editor__edit_property
+            }
+        ),
+        confirmLabel = stringRes(
+            if (isAddPropertyDialog) {
+                R.string.action__add
+            } else {
+                R.string.action__apply
+            }
+        ),
         onConfirm = {
             if (!isPropertyNameValid() || !isPropertyValueValid()) {
                 showSelectAsError = true
@@ -189,7 +210,11 @@ internal fun EditPropertyDialog(
         },
         dismissLabel = stringRes(R.string.action__cancel),
         onDismiss = onDismiss,
-        neutralLabel = if (!isAddPropertyDialog) { stringRes(R.string.action__delete) } else { null },
+        neutralLabel = if (!isAddPropertyDialog) {
+            stringRes(R.string.action__delete)
+        } else {
+            null
+        },
         onNeutral = onDelete,
         neutralColors = ButtonDefaults.textButtonColors(
             contentColor = MaterialTheme.colors.error,
@@ -341,7 +366,7 @@ private fun PropertyValueEditor(
                 listOf("") + definedVariables.keys.toList()
             }
             val selectedIndex by remember(variableKeys, value.key) {
-                mutableStateOf(variableKeys.indexOf(value.key).coerceIn(variableKeys.indices))
+                mutableIntStateOf(variableKeys.indexOf(value.key).coerceIn(variableKeys.indices))
             }
             var expanded by remember { mutableStateOf(false) }
             Row(
@@ -369,6 +394,7 @@ private fun PropertyValueEditor(
                 )
             }
         }
+
         is SnyggSolidColorValue -> {
             val colorPickerState = rememberJetPrefColorPickerState(initColor = value.color)
             val colorPickerStr = translatePropertyValue(value, level, displayColorsAs)
@@ -455,7 +481,7 @@ private fun PropertyValueEditor(
                         }
                         FlorisOutlinedTextField(
                             value = colorStr,
-                            onValueChange =  { colorStr = it },
+                            onValueChange = { colorStr = it },
                             showValidationError = showValidationErrors,
                             validationResult = colorStrValidation,
                         )
@@ -463,6 +489,7 @@ private fun PropertyValueEditor(
                 }
             }
         }
+
         is SnyggDpSizeValue -> {
             var sizeStr by remember {
                 val dp = value.dp.takeUnless { it.isUnspecified } ?: SnyggDpSizeValue.defaultValue().dp
@@ -489,6 +516,48 @@ private fun PropertyValueEditor(
                 )
             }
         }
+
+        is SnyggMaterialYouValue -> {
+            val onSelectItem: (Int) -> Unit = when (value) {
+                is SnyggMaterialYouDarkColorValue -> { index ->
+                    onValueChange(SnyggMaterialYouDarkColorValue(MaterialYouColor.colorNames[index]))
+                }
+
+                is SnyggMaterialYouLightColorValue -> { index ->
+                    onValueChange(SnyggMaterialYouLightColorValue(MaterialYouColor.colorNames[index]))
+                }
+            }
+
+            val selectedIndex by remember(value.colorName) {
+                mutableIntStateOf(
+                    MaterialYouColor.colorNames.indexOf(value.colorName).coerceIn(MaterialYouColor.colorNames.indices)
+                )
+            }
+            var expanded by remember { mutableStateOf(false) }
+            Row(
+                modifier = Modifier.padding(top = 8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                FlorisDropdownMenu(
+                    modifier = Modifier
+                        .padding(end = 12.dp)
+                        .weight(1f),
+                    items = MaterialYouColor.colorNames,
+                    labelProvider = { translatePropertyName(it, level) },
+                    expanded = expanded,
+                    selectedIndex = selectedIndex,
+                    isError = isError,
+                    onSelectItem = onSelectItem,
+                    onExpandRequest = { expanded = true },
+                    onDismissRequest = { expanded = false },
+                )
+                SnyggValueIcon(
+                    value = value,
+                    definedVariables = definedVariables,
+                )
+            }
+        }
+
         is SnyggSpSizeValue -> {
             var sizeStr by remember {
                 val sp = value.sp.takeUnless { it.isUnspecified } ?: SnyggSpSizeValue.defaultValue().sp
@@ -515,6 +584,7 @@ private fun PropertyValueEditor(
                 )
             }
         }
+
         is SnyggShapeValue -> when (value) {
             is SnyggDpShapeValue -> {
                 var showDialogInitDp by rememberSaveable(stateSaver = DpSizeSaver) {
@@ -524,48 +594,60 @@ private fun PropertyValueEditor(
                     mutableStateOf<ShapeCorner?>(null)
                 }
                 var topStart by rememberSaveable(stateSaver = DpSizeSaver) {
-                    mutableStateOf(when (value) {
-                        is SnyggCutCornerDpShapeValue -> value.topStart
-                        is SnyggRoundedCornerDpShapeValue -> value.topStart
-                    })
+                    mutableStateOf(
+                        when (value) {
+                            is SnyggCutCornerDpShapeValue -> value.topStart
+                            is SnyggRoundedCornerDpShapeValue -> value.topStart
+                        }
+                    )
                 }
                 var topEnd by rememberSaveable(stateSaver = DpSizeSaver) {
-                    mutableStateOf(when (value) {
-                        is SnyggCutCornerDpShapeValue -> value.topEnd
-                        is SnyggRoundedCornerDpShapeValue -> value.topEnd
-                    })
+                    mutableStateOf(
+                        when (value) {
+                            is SnyggCutCornerDpShapeValue -> value.topEnd
+                            is SnyggRoundedCornerDpShapeValue -> value.topEnd
+                        }
+                    )
                 }
                 var bottomEnd by rememberSaveable(stateSaver = DpSizeSaver) {
-                    mutableStateOf(when (value) {
-                        is SnyggCutCornerDpShapeValue -> value.bottomEnd
-                        is SnyggRoundedCornerDpShapeValue -> value.bottomEnd
-                    })
+                    mutableStateOf(
+                        when (value) {
+                            is SnyggCutCornerDpShapeValue -> value.bottomEnd
+                            is SnyggRoundedCornerDpShapeValue -> value.bottomEnd
+                        }
+                    )
                 }
                 var bottomStart by rememberSaveable(stateSaver = DpSizeSaver) {
-                    mutableStateOf(when (value) {
-                        is SnyggCutCornerDpShapeValue -> value.bottomStart
-                        is SnyggRoundedCornerDpShapeValue -> value.bottomStart
-                    })
+                    mutableStateOf(
+                        when (value) {
+                            is SnyggCutCornerDpShapeValue -> value.bottomStart
+                            is SnyggRoundedCornerDpShapeValue -> value.bottomStart
+                        }
+                    )
                 }
                 val shape = remember(topStart, topEnd, bottomEnd, bottomStart) {
                     when (value) {
                         is SnyggCutCornerDpShapeValue -> {
                             CutCornerShape(topStart, topEnd, bottomEnd, bottomStart)
                         }
+
                         is SnyggRoundedCornerDpShapeValue -> {
                             RoundedCornerShape(topStart, topEnd, bottomEnd, bottomStart)
                         }
                     }
                 }
                 LaunchedEffect(shape) {
-                    onValueChange(when (value) {
-                        is SnyggCutCornerDpShapeValue -> {
-                            SnyggCutCornerDpShapeValue(topStart, topEnd, bottomEnd, bottomStart)
+                    onValueChange(
+                        when (value) {
+                            is SnyggCutCornerDpShapeValue -> {
+                                SnyggCutCornerDpShapeValue(topStart, topEnd, bottomEnd, bottomStart)
+                            }
+
+                            is SnyggRoundedCornerDpShapeValue -> {
+                                SnyggRoundedCornerDpShapeValue(topStart, topEnd, bottomEnd, bottomStart)
+                            }
                         }
-                        is SnyggRoundedCornerDpShapeValue -> {
-                            SnyggRoundedCornerDpShapeValue(topStart, topEnd, bottomEnd, bottomStart)
-                        }
-                    })
+                    )
                 }
                 Row(
                     modifier = Modifier
@@ -672,56 +754,69 @@ private fun PropertyValueEditor(
                     }
                 }
             }
+
             is SnyggPercentShapeValue -> {
                 var showDialogInitPercentage by rememberSaveable {
-                    mutableStateOf(0)
+                    mutableIntStateOf(0)
                 }
                 var showDialogForCorner by rememberSaveable {
                     mutableStateOf<ShapeCorner?>(null)
                 }
                 var topStart by rememberSaveable {
-                    mutableStateOf(when (value) {
-                        is SnyggCutCornerPercentShapeValue -> value.topStart
-                        is SnyggRoundedCornerPercentShapeValue -> value.topStart
-                    })
+                    mutableIntStateOf(
+                        when (value) {
+                            is SnyggCutCornerPercentShapeValue -> value.topStart
+                            is SnyggRoundedCornerPercentShapeValue -> value.topStart
+                        }
+                    )
                 }
                 var topEnd by rememberSaveable {
-                    mutableStateOf(when (value) {
-                        is SnyggCutCornerPercentShapeValue -> value.topEnd
-                        is SnyggRoundedCornerPercentShapeValue -> value.topEnd
-                    })
+                    mutableIntStateOf(
+                        when (value) {
+                            is SnyggCutCornerPercentShapeValue -> value.topEnd
+                            is SnyggRoundedCornerPercentShapeValue -> value.topEnd
+                        }
+                    )
                 }
                 var bottomEnd by rememberSaveable {
-                    mutableStateOf(when (value) {
-                        is SnyggCutCornerPercentShapeValue -> value.bottomEnd
-                        is SnyggRoundedCornerPercentShapeValue -> value.bottomEnd
-                    })
+                    mutableIntStateOf(
+                        when (value) {
+                            is SnyggCutCornerPercentShapeValue -> value.bottomEnd
+                            is SnyggRoundedCornerPercentShapeValue -> value.bottomEnd
+                        }
+                    )
                 }
                 var bottomStart by rememberSaveable {
-                    mutableStateOf(when (value) {
-                        is SnyggCutCornerPercentShapeValue -> value.bottomStart
-                        is SnyggRoundedCornerPercentShapeValue -> value.bottomStart
-                    })
+                    mutableIntStateOf(
+                        when (value) {
+                            is SnyggCutCornerPercentShapeValue -> value.bottomStart
+                            is SnyggRoundedCornerPercentShapeValue -> value.bottomStart
+                        }
+                    )
                 }
                 val shape = remember(topStart, topEnd, bottomEnd, bottomStart) {
                     when (value) {
                         is SnyggCutCornerPercentShapeValue -> {
                             CutCornerShape(topStart, topEnd, bottomEnd, bottomStart)
                         }
+
                         is SnyggRoundedCornerPercentShapeValue -> {
                             RoundedCornerShape(topStart, topEnd, bottomEnd, bottomStart)
                         }
                     }
                 }
                 LaunchedEffect(shape) {
-                    onValueChange(when (value) {
-                        is SnyggCutCornerPercentShapeValue -> {
-                            SnyggCutCornerPercentShapeValue(topStart, topEnd, bottomEnd, bottomStart)
+                    onValueChange(
+                        when (value) {
+                            is SnyggCutCornerPercentShapeValue -> {
+                                SnyggCutCornerPercentShapeValue(topStart, topEnd, bottomEnd, bottomStart)
+                            }
+
+                            is SnyggRoundedCornerPercentShapeValue -> {
+                                SnyggRoundedCornerPercentShapeValue(topStart, topEnd, bottomEnd, bottomStart)
+                            }
                         }
-                        is SnyggRoundedCornerPercentShapeValue -> {
-                            SnyggRoundedCornerPercentShapeValue(topStart, topEnd, bottomEnd, bottomStart)
-                        }
-                    })
+                    )
                 }
                 Row(
                     modifier = Modifier
@@ -792,7 +887,7 @@ private fun PropertyValueEditor(
                                     ShapeCorner.TOP_END -> topEnd = sizePercentage
                                     ShapeCorner.BOTTOM_END -> bottomEnd = sizePercentage
                                     ShapeCorner.BOTTOM_START -> bottomStart = sizePercentage
-                                    else -> { }
+                                    else -> {}
                                 }
                                 showDialogForCorner = null
                             }
@@ -829,6 +924,7 @@ private fun PropertyValueEditor(
                     }
                 }
             }
+
             else -> {
                 Row(
                     modifier = Modifier
@@ -844,6 +940,7 @@ private fun PropertyValueEditor(
                 }
             }
         }
+
         else -> {
             // Render nothing
         }

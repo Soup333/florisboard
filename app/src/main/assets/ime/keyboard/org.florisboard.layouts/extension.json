@@ -118,6 +118,13 @@
         "modifier": "org.florisboard.layouts:dvorak"
       },
       {
+        "id": "dvorak_de",
+        "label": "Dvorak (DE)",
+        "authors": [ "msrd0" ],
+        "direction": "ltr",
+        "modifier": "org.florisboard.layouts:dvorak_de"
+      },
+      {
         "id": "dvorak_es",
         "label": "Dvorak (ÑÇ)",
         "authors": [ "tsiflimagas" ],
@@ -397,6 +404,18 @@
         "direction": "ltr"
       },
       {
+        "id": "udmurt_compact",
+        "label": "Udmurt (3 чур)",
+        "authors": [ "vorgoron" ],
+        "direction": "ltr"
+      },
+      {
+        "id": "udmurt_extended",
+        "label": "Udmurt (4 чур)",
+        "authors": [ "vorgoron" ],
+        "direction": "ltr"
+      },
+      {
         "id": "urdu_phonetic",
         "label": "Urdu Phonetic",
         "authors": [ "mubashir-rehman", "mirfatif" ],
@@ -439,6 +458,12 @@
         "id": "dvorak",
         "label": "Dvorak",
         "authors": [ "patrickgold" ],
+        "direction": "ltr"
+      },
+      {
+        "id": "dvorak_de",
+        "label": "Dvorak (DE)",
+        "authors": [ "msrd0" ],
         "direction": "ltr"
       },
       {

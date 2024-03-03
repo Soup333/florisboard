@@ -64,6 +64,7 @@ import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.AbstractComposeView
 import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.LayoutDirection
@@ -77,8 +78,6 @@ import dev.patrickgold.florisboard.app.devtools.DevtoolsOverlay
 import dev.patrickgold.florisboard.app.florisPreferenceModel
 import dev.patrickgold.florisboard.ime.ImeUiMode
 import dev.patrickgold.florisboard.ime.clipboard.ClipboardInputLayout
-import dev.patrickgold.florisboard.ime.sheet.BottomSheetHostUi
-import dev.patrickgold.florisboard.ime.sheet.isBottomSheetShowing
 import dev.patrickgold.florisboard.ime.editor.EditorRange
 import dev.patrickgold.florisboard.ime.editor.FlorisEditorInfo
 import dev.patrickgold.florisboard.ime.input.InputFeedbackController
@@ -90,8 +89,11 @@ import dev.patrickgold.florisboard.ime.lifecycle.LifecycleInputMethodService
 import dev.patrickgold.florisboard.ime.media.MediaInputLayout
 import dev.patrickgold.florisboard.ime.onehanded.OneHandedMode
 import dev.patrickgold.florisboard.ime.onehanded.OneHandedPanel
+import dev.patrickgold.florisboard.ime.sheet.BottomSheetHostUi
+import dev.patrickgold.florisboard.ime.sheet.isBottomSheetShowing
 import dev.patrickgold.florisboard.ime.smartbar.ExtendedActionsPlacement
 import dev.patrickgold.florisboard.ime.smartbar.SmartbarLayout
+import dev.patrickgold.florisboard.ime.smartbar.quickaction.QuickActionsEditorPanel
 import dev.patrickgold.florisboard.ime.text.TextInputLayout
 import dev.patrickgold.florisboard.ime.theme.FlorisImeTheme
 import dev.patrickgold.florisboard.ime.theme.FlorisImeUi
@@ -670,9 +672,20 @@ class FlorisImeService : LifecycleInputMethodService() {
 
         @Composable
         override fun Content() {
+            val context = LocalContext.current
+            val keyboardManager by context.keyboardManager()
+            val state by keyboardManager.activeState.collectAsState()
+
             ProvideLocalizedResources(resourcesContext, forceLayoutDirection = LayoutDirection.Ltr) {
                 FlorisImeTheme {
-                    BottomSheetHostUi()
+                    BottomSheetHostUi(
+                        isShowing = state.isBottomSheetShowing(),
+                        onHide = {
+                            keyboardManager.activeState.isActionsEditorVisible = false
+                        },
+                    ) {
+                        QuickActionsEditorPanel()
+                    }
                 }
             }
         }
@@ -705,6 +718,7 @@ class FlorisImeService : LifecycleInputMethodService() {
 
         @Composable
         fun Content() {
+            val context = LocalContext.current
             ProvideLocalizedResources(resourcesContext, forceLayoutDirection = LayoutDirection.Ltr) {
                 FlorisImeTheme {
                     val layoutStyle = FlorisImeTheme.style.get(FlorisImeUi.ExtractedLandscapeInputLayout)
@@ -713,21 +727,21 @@ class FlorisImeService : LifecycleInputMethodService() {
                     val activeEditorInfo by editorInstance.activeInfoFlow.collectAsState()
                     Box(
                         modifier = Modifier
-                            .snyggBackground(layoutStyle, FlorisImeTheme.fallbackSurfaceColor()),
+                            .snyggBackground(context, layoutStyle, FlorisImeTheme.fallbackSurfaceColor()),
                     ) {
                         Row(
                             modifier = Modifier.fillMaxSize(),
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
-                            val fieldColor = fieldStyle.foreground.solidColor(FlorisImeTheme.fallbackContentColor())
+                            val fieldColor = fieldStyle.foreground.solidColor(context, FlorisImeTheme.fallbackContentColor())
                             AndroidView(
                                 modifier = Modifier
                                     .padding(8.dp)
                                     .fillMaxHeight()
                                     .weight(1f)
                                     .snyggShadow(fieldStyle)
-                                    .snyggBorder(fieldStyle)
-                                    .snyggBackground(fieldStyle),
+                                    .snyggBorder(context, fieldStyle)
+                                    .snyggBackground(context, fieldStyle),
                                 factory = { extractEditText },
                                 update = { view ->
                                     view.background = null
@@ -755,8 +769,8 @@ class FlorisImeService : LifecycleInputMethodService() {
                                     ?: "ACTION",
                                 shape = actionStyle.shape.shape(),
                                 colors = ButtonDefaults.buttonColors(
-                                    backgroundColor = actionStyle.background.solidColor(FlorisImeTheme.fallbackContentColor()),
-                                    contentColor = actionStyle.foreground.solidColor(FlorisImeTheme.fallbackSurfaceColor()),
+                                    backgroundColor = actionStyle.background.solidColor(context, FlorisImeTheme.fallbackContentColor()),
+                                    contentColor = actionStyle.foreground.solidColor(context, FlorisImeTheme.fallbackSurfaceColor()),
                                 ),
                             )
                         }
